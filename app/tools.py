@@ -146,6 +146,15 @@ def save_story(title: str, content: str, moral: str, tool_context: ToolContext) 
             db = firestore.Client(project=config.GCP_PROJECT)
             stories_ref = db.collection(config.FIRESTORE_COLLECTION)
 
+            # Check if hash already exists in Firestore
+            dup_query = stories_ref.where("content_hash", "==", content_hash).limit(1).stream()
+            if any(dup_query):
+                logger.warning(f"Duplicate story detected in Firestore: {title} (hash: {content_hash})")
+                return {
+                    "status": "error",
+                    "error": f"Duplicate story detected (SHA-256 match for hash {content_hash}). Please generate a different story."
+                }
+
             story_doc = {
                 "title": title,
                 "content": content,
@@ -166,8 +175,17 @@ def save_story(title: str, content: str, moral: str, tool_context: ToolContext) 
         except Exception as e:
             logger.warning(f"Firestore save failed, using local fallback: {e}")
 
-    # Local JSON fallback
+    # Duplicate check in Local JSON
     stories = _load_local_stories()
+    for s in stories:
+        if s.get("content_hash") == content_hash:
+            logger.warning(f"Duplicate story detected locally: {title} (hash: {content_hash})")
+            return {
+                "status": "error",
+                "error": f"Duplicate story detected (SHA-256 match for hash {content_hash}). Please generate a different story."
+            }
+
+    # Local JSON fallback save
     story_entry = {
         "title": title,
         "content": content,
@@ -190,7 +208,7 @@ def save_story(title: str, content: str, moral: str, tool_context: ToolContext) 
 
 
 def send_email(subject: str, story_title: str, story_content: str, story_moral: str, tool_context: ToolContext) -> dict:
-    """Send the motivational story via email using Gmail SMTP.
+    """Send the motivational story via email to all active subscribers.
 
     Args:
         subject: The email subject line.
@@ -207,13 +225,43 @@ def send_email(subject: str, story_title: str, story_content: str, story_moral: 
             "error": "Email credentials not configured. Set SENDER_EMAIL and SMTP_PASSWORD in .env",
         }
 
-    if not config.RECIPIENT_EMAIL:
+    # Fetch subscribers from Firestore or Local Fallback
+    recipients = []
+    if _use_firestore():
+        try:
+            from google.cloud import firestore
+            db = firestore.Client(project=config.GCP_PROJECT)
+            subs_ref = db.collection("subscribers").stream()
+            for doc in subs_ref:
+                data = doc.to_dict()
+                if data.get("email"):
+                    recipients.append(data.get("email"))
+            logger.info(f"Loaded {len(recipients)} subscribers from Firestore.")
+        except Exception as e:
+            logger.warning(f"Failed to load subscribers from Firestore: {e}")
+
+    if not recipients:
+        # Check Local Fallback
+        local_subs_file = Path(__file__).parent.parent / "subscribers_ledger.json"
+        if local_subs_file.exists():
+            try:
+                with open(local_subs_file, "r") as f:
+                    recipients = json.load(f)
+                logger.info(f"Loaded {len(recipients)} subscribers from local JSON.")
+            except Exception as e:
+                logger.warning(f"Failed to load local subscribers: {e}")
+
+    # Default to config RECIPIENT_EMAIL if list is empty
+    if not recipients and config.RECIPIENT_EMAIL:
+        recipients = [config.RECIPIENT_EMAIL]
+
+    if not recipients:
         return {
             "status": "error",
-            "error": "No recipient email configured. Set RECIPIENT_EMAIL in .env",
+            "error": "No recipients configured or subscribed.",
         }
 
-    # Build HTML email
+    # Build HTML email body
     html_body = f"""
     <!DOCTYPE html>
     <html>
@@ -297,32 +345,44 @@ def send_email(subject: str, story_title: str, story_content: str, story_moral: 
     </html>
     """
 
+    success_count = 0
+    errors = []
+
     try:
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = subject
-        msg["From"] = config.SENDER_EMAIL
-        msg["To"] = config.RECIPIENT_EMAIL
-
-        # Plain text fallback
-        plain_text = f"{story_title}\n\n{story_content}\n\nMoral: {story_moral}"
-        msg.attach(MIMEText(plain_text, "plain"))
-        msg.attach(MIMEText(html_body, "html"))
-
         with smtplib.SMTP(config.SMTP_HOST, config.SMTP_PORT) as server:
             server.starttls()
             server.login(config.SENDER_EMAIL, config.SMTP_PASSWORD)
-            server.send_message(msg)
+            
+            for recipient in recipients:
+                try:
+                    msg = MIMEMultipart("alternative")
+                    msg["Subject"] = subject
+                    msg["From"] = config.SENDER_EMAIL
+                    msg["To"] = recipient
 
-        logger.info(f"Email sent successfully to {config.RECIPIENT_EMAIL}")
+                    # Plain text fallback
+                    plain_text = f"{story_title}\n\n{story_content}\n\nMoral: {story_moral}"
+                    msg.attach(MIMEText(plain_text, "plain"))
+                    msg.attach(MIMEText(html_body, "html"))
+
+                    server.send_message(msg)
+                    success_count += 1
+                except Exception as sub_err:
+                    logger.error(f"Error sending to {recipient}: {sub_err}")
+                    errors.append(f"{recipient}: {str(sub_err)}")
+
+        logger.info(f"Emails sent successfully to {success_count}/{len(recipients)} recipients.")
 
         return {
             "status": "success",
-            "recipient": config.RECIPIENT_EMAIL,
+            "recipients_sent": success_count,
+            "total_recipients": len(recipients),
+            "errors": errors,
             "subject": subject,
         }
 
     except Exception as e:
-        logger.error(f"Error sending email: {e}")
+        logger.error(f"SMTP connection error: {e}")
         return {
             "status": "error",
             "error": str(e),
