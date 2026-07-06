@@ -39,7 +39,7 @@ except Exception:
     otel_to_cloud = False
 
 allow_origins = (
-    os.getenv("ALLOW_ORIGINS", "").split(",") if os.getenv("ALLOW_ORIGINS") else None
+    os.getenv("ALLOW_ORIGINS", "").split(",") if os.getenv("ALLOW_ORIGINS") else ["*"]
 )
 
 # Artifact bucket for ADK (created by Terraform, passed via env var)
