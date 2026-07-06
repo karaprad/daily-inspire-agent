@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Inspiration Ledger</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="bg-glow glow-orange"></div>
+    <div class="bg-glow glow-purple"></div>
+
+    <div class="container">
+        <header>
+            <div class="brand">
+                <h1>🌟 Inspiration Ledger</h1>
+                <p>Daily Motivational Stories Archive</p>
+            </div>
+            <div class="stats">
+                <div class="stat-card">
+                    📖 Stories: <strong id="stories-count">0</strong>
+                </div>
+                <div class="stat-card">
+                    👥 Subscribers: <strong id="subs-count">0</strong>
+                </div>
+            </div>
+        </header>
+
+        <!-- Collapsible Settings Panel -->
+        <section class="settings-panel">
+            <div class="settings-header" onclick="toggleSettings()">
+                <h3>⚙️ API Connection Settings</h3>
+                <span style="font-size: 0.8rem; opacity: 0.7;">Click to expand/collapse</span>
+            </div>
+            <div class="settings-content" id="settings-content" style="display: none;">
+                <div class="settings-group">
+                    <label for="api-url">API Base URL</label>
+                    <input type="url" id="api-url" placeholder="e.g. http://localhost:8000">
+                </div>
+                <div class="settings-group">
+                    <label for="auth-token">Bearer Token (Required for GCP Deploys)</label>
+                    <input type="password" id="auth-token" placeholder="Paste your GCP Authorization token here">
+                </div>
+                <button class="btn-save-settings" onclick="saveSettings()">Save & Refresh</button>
+            </div>
+        </section>
+
+        <!-- Main Content Area -->
+        <main class="main-layout">
+            <!-- Left Side: Stories Feed -->
+            <section>
+                <h2 class="feed-title">📖 Motivational Story Feed</h2>
+                <div class="spinner" id="stories-spinner"></div>
+                <div class="stories-list" id="stories-list">
+                    <!-- Dynamic Stories Inserted Here -->
+                </div>
+            </section>
+
+            <!-- Right Side: Subscribe Card -->
+            <section>
+                <div class="subscribe-card">
+                    <h2>📬 Join Mailing List</h2>
+                    <p>Subscribe to receive unique, child-safe motivational stories emailed daily. Never repeats!</p>
+                    
+                    <form id="subscribe-form">
+                        <div class="form-group">
+                            <label for="email">Email Address</label>
+                            <input type="email" id="email" placeholder="e.g. arjun@gmail.com" required>
+                        </div>
+                        <button type="submit" class="btn-subscribe" id="btn-submit">
+                            Subscribe Now
+                        </button>
+                    </form>
+                    
+                    <div class="alert alert-success" id="success-alert">Successfully subscribed!</div>
+                    <div class="alert alert-error" id="error-alert">Failed to subscribe.</div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modal Dialog for reading full story -->
+    <dialog id="story-dialog">
+        <div class="modal-header">
+            <h3 id="modal-title">Story Title</h3>
+            <button class="modal-close" onclick="closeStory()">&times;</button>
+        </div>
+        <div class="modal-body" id="modal-content">
+            <!-- Story body goes here -->
+        </div>
+        <div class="modal-moral" id="modal-moral">
+            <!-- Moral goes here -->
+        </div>
+    </dialog>
+
+    <script src="app.js"></script>
+</body>
+</html>
