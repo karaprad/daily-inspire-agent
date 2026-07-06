@@ -1,11 +1,6 @@
 {
-  "remote_agent_runtime_id": "None",
-  "deployment_timestamp": "None",
-  "pending_operation": {
-    "operation_name": "projects/654073130690/locations/us-east1/reasoningEngines/5265798679930863616/operations/1557494848225804288",
-    "project": "daily-inspiration-mailer",
-    "location": "us-east1",
-    "deployment_target": "agent_runtime",
-    "started_at": "2026-07-06T20:14:08.337816+00:00"
-  }
+  "remote_agent_runtime_id": "projects/654073130690/locations/us-east1/reasoningEngines/5265798679930863616",
+  "deployment_target": "agent_runtime",
+  "is_a2a": false,
+  "deployment_timestamp": "2026-07-06T20:21:15.921570+00:00"
 }
