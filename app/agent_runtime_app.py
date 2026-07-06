@@ -28,11 +28,17 @@ from app.app_utils.typing import Feedback
 # Load environment variables from .env file at runtime
 load_dotenv()
 
+# Initialize Vertex AI at module import time to ensure global configs (project and location)
+# are set before AgentEngineApp instantiation.
+gcp_project = os.environ.get("GOOGLE_CLOUD_PROJECT") or os.environ.get("GCP_PROJECT") or "daily-inspiration-mailer"
+gcp_location = os.environ.get("GOOGLE_CLOUD_LOCATION") or "us-east1"
+vertexai.init(project=gcp_project, location=gcp_location)
+
 
 class AgentEngineApp(AdkApp):
     def set_up(self) -> None:
         """Initialize the agent engine app with logging and telemetry."""
-        vertexai.init()
+        vertexai.init(project=gcp_project, location=gcp_location)
         setup_telemetry()
         super().set_up()
         logging.basicConfig(level=logging.INFO)
