@@ -22,9 +22,22 @@ from app.app_utils.telemetry import setup_telemetry
 from app.app_utils.typing import Feedback
 
 setup_telemetry()
-_, project_id = google.auth.default()
-logging_client = google_cloud_logging.Client()
-logger = logging_client.logger(__name__)
+
+# Try setting up GCP logging; fall back to local logging if credentials are not found
+try:
+    _, project_id = google.auth.default()
+    logging_client = google_cloud_logging.Client()
+    logger = logging_client.logger(__name__)
+    otel_to_cloud = os.environ.get("GOOGLE_GENAI_USE_VERTEXAI", "True").lower() == "true"
+except Exception:
+    import logging
+    logging.basicConfig(level=logging.INFO)
+    class LocalLogger:
+        def log_struct(self, data, severity="INFO"):
+            logging.info(f"Feedback structure (Severity {severity}): {data}")
+    logger = LocalLogger()
+    otel_to_cloud = False
+
 allow_origins = (
     os.getenv("ALLOW_ORIGINS", "").split(",") if os.getenv("ALLOW_ORIGINS") else None
 )
@@ -44,7 +57,7 @@ app: FastAPI = get_fast_api_app(
     artifact_service_uri=artifact_service_uri,
     allow_origins=allow_origins,
     session_service_uri=session_service_uri,
-    otel_to_cloud=True,
+    otel_to_cloud=otel_to_cloud,
 )
 app.title = "daily-inspire-agent"
 app.description = "API for interacting with the Agent daily-inspire-agent"
