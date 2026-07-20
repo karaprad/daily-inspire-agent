@@ -38,7 +38,7 @@ async def run() -> bool:
     logger.info("🚀 Starting scheduled run...")
 
     content = types.Content(
-        role="user", parts=[types.Part.from_text(PROMPT)]
+        role="user", parts=[types.Part.from_text(text=PROMPT)]
     )
 
     final_text = ""
