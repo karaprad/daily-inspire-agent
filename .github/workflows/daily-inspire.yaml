@@ -36,6 +36,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add stories_ledger.json subscribers_ledger.json
+          git add stories_ledger.json || true
+          git add subscribers_ledger.json || true
           git diff --cached --quiet || git commit -m "📚 Add daily story - $(date -u +'%Y-%m-%d')"
-          git push
+          git diff --cached --quiet && echo "Nothing to commit" || git push
