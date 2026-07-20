@@ -1,0 +1,41 @@
+name: 🌟 Daily Inspiration
+
+on:
+  schedule:
+    # 7:00 AM IST = 1:30 AM UTC
+    - cron: '30 1 * * *'
+  workflow_dispatch: # Allow manual trigger from GitHub UI
+
+jobs:
+  send-daily-story:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python with uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: uv sync --no-dev
+
+      - name: Run Daily Inspire Agent
+        env:
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          GOOGLE_GENAI_USE_VERTEXAI: "False"
+          SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          RECIPIENT_EMAIL: ${{ secrets.RECIPIENT_EMAIL }}
+        run: uv run python -m app.run_scheduled
+
+      - name: Commit updated stories ledger
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add stories_ledger.json subscribers_ledger.json
+          git diff --cached --quiet || git commit -m "📚 Add daily story - $(date -u +'%Y-%m-%d')"
+          git push
