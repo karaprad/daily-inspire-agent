@@ -3,13 +3,13 @@
 > **Capstone Project** — AI Agents: Intensive Vibe Coding  
 > **Track**: Concierge Agents — Safe and useful personal assistants for everyday life
 
-An **ambient AI agent** built with [Google ADK](https://adk.dev/) that generates and emails unique, culturally relevant motivational stories to Indian kids every day. No story ever repeats — a Firestore ledger ensures every tale is fresh and inspiring.
+An **ambient AI agent** built with [Google ADK](https://adk.dev/) that generates and emails unique, culturally relevant motivational stories to Indian kids every Friday. No story ever repeats — a Firestore ledger ensures every tale is fresh and inspiring.
 
 ---
 
 ## 🎯 What It Does
 
-Every day at a scheduled time, this agent:
+Every Friday at a scheduled time, this agent:
 
 1. **Checks the story ledger** — Queries Firestore for all previously sent stories
 2. **Generates a unique story** — Uses Gemini to craft an original motivational story featuring an Indian kid performing a good deed
@@ -18,7 +18,7 @@ Every day at a scheduled time, this agent:
 
 ### Why It's a Concierge Agent
 
-- **Simplifies everyday life** — Parents/teachers get daily, curated, age-appropriate stories without effort
+- **Simplifies everyday life** — Parents/teachers get weekly, curated, age-appropriate stories without effort
 - **Personalized** — Stories are culturally relevant with Indian names, places, festivals, and values
 - **Secure** — No PII in story content; credentials in environment variables/Secret Manager; prompt injection defenses
 - **Autonomous** — Runs on a schedule with zero human intervention
@@ -30,7 +30,7 @@ Every day at a scheduled time, this agent:
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    Cloud Scheduler                          │
-│                 (Daily 7:00 AM IST)                         │
+│                 (Weekly — Friday 7:00 AM IST)                    │
 └─────────────┬───────────────────────────────────────────────┘
               │ Pub/Sub trigger
               ▼
@@ -147,9 +147,10 @@ agents-cli deploy
 ## 📧 Email Preview
 
 The agent sends beautifully formatted HTML emails with:
-- 🌟 Gradient header with "Daily Inspiration" branding
+- 🌟 Gradient header with "Weekly Inspiration" branding
 - 📖 Story content with serif typography for readability
 - 💡 Highlighted moral/lesson in a green callout
+- 📬 Subscribe/unsubscribe details in the footer
 - 📅 Date stamp in the footer
 
 ---

@@ -134,7 +134,7 @@ def get_stories():
 
 @app.post("/api/subscribe")
 def subscribe(request: SubscribeRequest):
-    """Subscribes an email to the daily story mailing list."""
+    """Subscribes an email to the weekly story mailing list (every Friday)."""
     from app.tools import _use_firestore, config
     email = request.email.strip().lower()
     
@@ -181,6 +181,54 @@ def subscribe(request: SubscribeRequest):
         raise HTTPException(status_code=500, detail=f"Failed to write subscription: {e}")
         
     return {"status": "success", "message": "Successfully subscribed!"}
+
+
+@app.post("/api/unsubscribe")
+def unsubscribe(request: SubscribeRequest):
+    """Unsubscribes an email from the weekly story mailing list."""
+    from app.tools import _use_firestore, config
+    email = request.email.strip().lower()
+
+    import re
+    if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+        raise HTTPException(status_code=400, detail="Invalid email address.")
+
+    removed = False
+
+    if _use_firestore():
+        try:
+            from google.cloud import firestore
+            db = firestore.Client(project=config.GCP_PROJECT)
+            subs_ref = db.collection("subscribers")
+            docs = list(subs_ref.where("email", "==", email).stream())
+            for doc in docs:
+                doc.reference.delete()
+                removed = True
+            if removed:
+                return {"status": "success", "message": "You have been unsubscribed. Sorry to see you go!"}
+        except Exception:
+            pass
+
+    # Local fallback
+    local_subs_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "subscribers_ledger.json")
+    subs = []
+    if os.path.exists(local_subs_file):
+        try:
+            with open(local_subs_file, "r") as f:
+                subs = json.load(f)
+        except Exception:
+            pass
+
+    if email in subs:
+        subs.remove(email)
+        try:
+            with open(local_subs_file, "w") as f:
+                json.dump(subs, f, indent=2)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to update subscription: {e}")
+        return {"status": "success", "message": "You have been unsubscribed. Sorry to see you go!"}
+
+    return {"status": "not_found", "message": "This email was not found in our subscriber list."}
 
 
 @app.get("/api/stats")
@@ -231,7 +279,7 @@ DASHBOARD_HTML = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Daily Inspiration Story Archive & Subscription</title>
+    <title>Weekly Inspiration — Friday Story Archive & Subscription</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
@@ -636,7 +684,7 @@ DASHBOARD_HTML = """
     <header>
         <div class="logo">
             <h1>🌟 Inspiration Ledger</h1>
-            <p>Daily Motivational Stories Archive</p>
+            <p>Weekly Motivational Stories — Every Friday</p>
         </div>
         <div class="stats-container">
             <div class="stat-badge">
@@ -650,7 +698,7 @@ DASHBOARD_HTML = """
 
     <main>
         <section>
-            <h2 class="archive-title">📖 Motivational Story Feed</h2>
+            <h2 class="archive-title">📖 Weekly Story Feed</h2>
             <div class="loading-spinner" id="stories-spinner"></div>
             <div class="stories-grid" id="stories-grid"></div>
         </section>
@@ -658,7 +706,7 @@ DASHBOARD_HTML = """
         <section>
             <div class="subscribe-card">
                 <h2>📬 Join Mailing List</h2>
-                <p>Subscribe to receive unique, child-safe motivational stories emailed daily. Never repeats!</p>
+                <p>Subscribe to receive unique, child-safe motivational stories emailed every Friday. Never repeats!</p>
                 
                 <form id="subscribe-form">
                     <div class="form-group">
@@ -672,6 +720,21 @@ DASHBOARD_HTML = """
                 
                 <div class="msg msg-success" id="success-msg">Successfully subscribed!</div>
                 <div class="msg msg-error" id="error-msg">Failed to subscribe.</div>
+
+                <hr style="border: none; border-top: 1px solid var(--border); margin: 24px 0 16px 0;">
+                <h2 style="font-size: 1.1rem; margin-bottom: 12px;">🚫 Unsubscribe</h2>
+                <p style="font-size: 0.85rem; margin-bottom: 16px;">No longer wish to receive stories? Enter your email below.</p>
+                <form id="unsubscribe-form">
+                    <div class="form-group">
+                        <label for="unsub-email">Email Address</label>
+                        <input type="email" id="unsub-email" placeholder="e.g. arjun@gmail.com" required>
+                    </div>
+                    <button type="submit" class="btn-subscribe" id="btn-unsub" style="background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%); box-shadow: 0 4px 15px rgba(107,114,128,0.3);">
+                        Unsubscribe
+                    </button>
+                </form>
+                <div class="msg msg-success" id="unsub-success-msg"></div>
+                <div class="msg msg-error" id="unsub-error-msg"></div>
             </div>
         </section>
     </main>
@@ -821,6 +884,56 @@ DASHBOARD_HTML = """
             }
         });
 
+        // Unsubscribe form handler
+        const unsubForm = document.getElementById('unsubscribe-form');
+        const unsubEmail = document.getElementById('unsub-email');
+        const unsubSuccess = document.getElementById('unsub-success-msg');
+        const unsubError = document.getElementById('unsub-error-msg');
+        const btnUnsub = document.getElementById('btn-unsub');
+
+        unsubForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            unsubSuccess.style.display = 'none';
+            unsubError.style.display = 'none';
+            btnUnsub.disabled = true;
+            btnUnsub.textContent = 'Unsubscribing...';
+
+            const email = unsubEmail.value;
+
+            try {
+                const res = await fetch('/api/unsubscribe', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+
+                btnUnsub.disabled = false;
+                btnUnsub.textContent = 'Unsubscribe';
+
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.status === 'success') {
+                        unsubSuccess.textContent = data.message;
+                        unsubSuccess.style.display = 'block';
+                        unsubEmail.value = '';
+                        fetchStats();
+                    } else {
+                        unsubError.textContent = data.message || 'Email not found.';
+                        unsubError.style.display = 'block';
+                    }
+                } else {
+                    const data = await res.json();
+                    unsubError.textContent = data.detail || 'Invalid email or server error.';
+                    unsubError.style.display = 'block';
+                }
+            } catch (err) {
+                btnUnsub.disabled = false;
+                btnUnsub.textContent = 'Unsubscribe';
+                unsubError.textContent = 'Failed to connect to the server.';
+                unsubError.style.display = 'block';
+            }
+        });
+
         fetchStats();
         fetchStories();
     </script>
@@ -830,9 +943,11 @@ DASHBOARD_HTML = """
 
 
 @app.get("/", response_class=HTMLResponse)
+@app.get("/dashboard", response_class=HTMLResponse)
 def serve_dashboard():
     """Serves the glassmorphic inspiration story archive dashboard."""
     return HTMLResponse(content=DASHBOARD_HTML)
+
 
 
 # Main execution

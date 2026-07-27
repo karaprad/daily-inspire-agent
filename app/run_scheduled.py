@@ -24,7 +24,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-PROMPT = "Generate a new unique motivational story for today and email it to all subscribers."
+PROMPT = "Generate a new unique motivational story for this week and email it to all subscribers."
 
 
 async def run() -> bool:

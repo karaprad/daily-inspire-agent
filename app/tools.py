@@ -210,6 +210,8 @@ def save_story(title: str, content: str, moral: str, tool_context: ToolContext) 
 def send_email(subject: str, story_title: str, story_content: str, story_moral: str, tool_context: ToolContext) -> dict:
     """Send the motivational story via email to all active subscribers.
 
+    Emails are sent weekly every Friday.
+
     Args:
         subject: The email subject line.
         story_title: The title of the story.
@@ -251,9 +253,9 @@ def send_email(subject: str, story_title: str, story_content: str, story_moral: 
             except Exception as e:
                 logger.warning(f"Failed to load local subscribers: {e}")
 
-    # Default to config RECIPIENT_EMAIL if list is empty
-    if not recipients and config.RECIPIENT_EMAIL:
-        recipients = [config.RECIPIENT_EMAIL]
+    # Ensure config.RECIPIENT_EMAIL is included in recipients if configured
+    if config.RECIPIENT_EMAIL and config.RECIPIENT_EMAIL not in recipients:
+        recipients.append(config.RECIPIENT_EMAIL)
 
     if not recipients:
         return {
@@ -327,8 +329,8 @@ def send_email(subject: str, story_title: str, story_content: str, story_moral: 
     </head>
     <body>
         <div class="header">
-            <h1>🌟 Daily Inspiration 🌟</h1>
-            <p>A motivational story just for you!</p>
+            <h1>🌟 Weekly Inspiration 🌟</h1>
+            <p>A motivational story just for you — every Friday!</p>
         </div>
         <div class="story-title">{story_title}</div>
         <div class="story-content">
@@ -338,8 +340,15 @@ def send_email(subject: str, story_title: str, story_content: str, story_moral: 
             💡 <strong>Moral:</strong> {story_moral}
         </div>
         <div class="footer">
-            <p>Sent with ❤️ by Daily Inspiration Mailer</p>
+            <p>Sent with ❤️ by Weekly Inspiration Mailer</p>
             <p>{datetime.now(timezone.utc).strftime('%B %d, %Y')}</p>
+            <hr style="border: none; border-top: 1px solid #ddd; margin: 15px 0;">
+            <p style="font-size: 11px; color: #999;">
+                📬 <strong>Subscribe:</strong> Send a blank email to 
+                <a href="mailto:inspiration-stories+subscribe@googlegroups.com" style="color: #ff6b35;">inspiration-stories+subscribe@googlegroups.com</a><br>
+                🚫 <strong>Unsubscribe:</strong> Send a blank email to 
+                <a href="mailto:inspiration-stories+unsubscribe@googlegroups.com" style="color: #ff6b35;">inspiration-stories+unsubscribe@googlegroups.com</a>
+            </p>
         </div>
     </body>
     </html>

@@ -17,6 +17,12 @@
 import os
 from pydantic import BaseModel, Field
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 
 class AgentConfig(BaseModel):
     """Agent configuration loaded from environment variables."""
@@ -42,7 +48,7 @@ class AgentConfig(BaseModel):
     TOPIC: str = Field(
         default="Motivational story for a 12 year old Indian kid with a good deed"
     )
-    STORY_LENGTH: str = Field(default="300-500 words")
+    STORY_LENGTH: str = Field(default="150-250 words")
     ENABLE_WEB_SEARCH: bool = Field(
         default_factory=lambda: os.environ.get("ENABLE_WEB_SEARCH", "true").lower()
         == "true"

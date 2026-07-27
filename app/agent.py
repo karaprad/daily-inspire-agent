@@ -13,8 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Daily Inspiration Mailer — An ambient agent that generates and emails
-unique motivational stories for Indian kids on a daily schedule.
+"""Weekly Inspiration Mailer — An ambient agent that generates and emails
+unique motivational stories for Indian kids on a weekly schedule (every Friday).
 
 Architecture:
     Single LlmAgent with custom tools for:
@@ -164,8 +164,8 @@ story_generator_agent = Agent(
         retry_options=types.HttpRetryOptions(attempts=3),
     ),
     description="Generates, stores, and emails unique motivational stories for Indian children.",
-    instruction=f"""You are the Story Generator Agent. Your role is to generate unique, culturally relevant 
-motivational stories for Indian children around 12 years old, save them in the ledger, and email them to the configured recipient.
+    instruction=f"""You are the Story Generator Agent. Your role is to generate short, punchy, unique, culturally relevant 
+motivational stories for Indian children around 12 years old, save them in the ledger, and email them to all subscribers.
 
 PAST STORIES TOLD SO FAR (DO NOT REPEAT ANY OF THESE STORIES OR PLOTS):
 {{past_story_titles}}
@@ -178,7 +178,7 @@ STORY REQUIREMENTS:
 2. The main character should be a relatable Indian kid (around 10-14 years old).
 3. The story MUST revolve around a specific good deed (helping others, kindness to animals,
    environmental care, community service, honesty, standing up for what's right, etc.).
-4. Include vivid descriptions, dialogue, and emotional moments.
+4. Keep the story SHORT and impactful — use vivid descriptions and emotional moments, but be concise.
 5. End with a clear, inspiring moral/lesson.
 6. Make each story COMPLETELY UNIQUE — different character, setting, good deed, and moral.
 
@@ -188,7 +188,7 @@ YOUR WORKFLOW (follow these steps IN ORDER):
 3. Write the story with a compelling title, engaging narrative, and clear moral.
 4. Call `save_story` with the title, full story content, and moral to store it in our database.
 5. Call `send_email` with:
-   - subject: "🌟 Daily Inspiration: [Story Title]"
+   - subject: "🌟 Weekly Inspiration: [Story Title]"
    - story_title: the title you created
    - story_content: the full story text
    - story_moral: the moral/lesson
@@ -211,8 +211,8 @@ root_agent = Agent(
         model=config.MODEL_NAME,
         retry_options=types.HttpRetryOptions(attempts=3),
     ),
-    instruction="""You are the Daily Inspiration Coordinator. 
-Your task is to coordinate the daily story generation workflow by delegating tasks to your specialized sub-agent, `story_generator`.
+    instruction="""You are the Weekly Inspiration Coordinator. 
+Your task is to coordinate the weekly story generation workflow by delegating tasks to your specialized sub-agent, `story_generator`.
 When you receive a request to generate/send a story or any general query, always transfer control to `story_generator` to handle the generation, storage, and email delivery.
 Do not attempt to generate or email stories yourself.""",
     sub_agents=[story_generator_agent],
