@@ -344,7 +344,8 @@ def send_email(subject: str, story_title: str, story_content: str, story_moral: 
             <p>{datetime.now(timezone.utc).strftime('%B %d, %Y')}</p>
             <hr style="border: none; border-top: 1px solid #ddd; margin: 15px 0;">
             <p style="font-size: 11px; color: #999;">
-                📬 <strong>Subscribe:</strong> Send a blank email to 
+                🌐 <strong>Google Group:</strong> Visit <a href="https://groups.google.com/g/inspiration-stories" style="color: #ff6b35;">groups.google.com/g/inspiration-stories</a> to join directly.<br>
+                📬 <strong>Subscribe via Email:</strong> Send a blank email to 
                 <a href="mailto:inspiration-stories+subscribe@googlegroups.com" style="color: #ff6b35;">inspiration-stories+subscribe@googlegroups.com</a><br>
                 🚫 <strong>Unsubscribe:</strong> Send a blank email to 
                 <a href="mailto:inspiration-stories+unsubscribe@googlegroups.com" style="color: #ff6b35;">inspiration-stories+unsubscribe@googlegroups.com</a>
